@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 
 # Load data
-df = pd.read_csv(r"C:\Users\Dodi Priambodo\Documents\Data Science\ames iowa housing.csv")
+df = pd.read_csv("ames iowa housing.csv")
 X = df[['GrLivArea', 'LotArea', 'BedroomAbvGr', 'GarageCars']]
 y = df['SalePrice']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
