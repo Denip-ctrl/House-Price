@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import xgboost as xgb
+import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error, r2_score
+import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 
@@ -58,3 +61,57 @@ with col1:
     st.metric(label="Prediksi XGBoost", value=f"${xgb_pred:,.2f}")
 with col2:
     st.metric(label="Prediksi Linear Regression", value=f"${lr_pred:,.2f}")
+
+# --- SEKSI BARU: EVALUASI MODEL ---
+st.write("---")
+st.subheader("📊 Evaluasi & Analisis Kesalahan Model")
+
+# 1. Lakukan prediksi pada data uji (X_test)
+xgb_test_pred = xgb_model.predict(X_test)
+lr_test_pred = lr_model.predict(X_test)
+
+# 2. Hitung Metrik Evaluasi
+rmse_xgb = np.sqrt(mean_squared_error(y_test, xgb_test_pred))
+rmse_lr = np.sqrt(mean_squared_error(y_test, lr_test_pred))
+
+r2_xgb = r2_score(y_test, xgb_test_pred)
+r2_lr = r2_score(y_test, lr_test_pred)
+
+# 3. Tampilkan Angka Kesalahan dalam bentuk Tabel/Metrik
+eval_col1, eval_col2 = st.columns(2)
+
+with eval_col1:
+    st.markdown("### **Model XGBoost**")
+    st.metric(label="Rata-rata Kesalahan (RMSE)", value=f"${rmse_xgb:,.2f}")
+    st.metric(label="Akurasi ($R^2$ Score)", value=f"{r2_xgb*100:.2f}%")
+
+with eval_col2:
+    st.markdown("### **Linear Regression**")
+    st.metric(label="Rata-rata Kesalahan (RMSE)", value=f"${rmse_lr:,.2f}")
+    st.metric(label="Akurasi ($R^2$ Score)", value=f"{r2_lr*100:.2f}%")
+
+st.write("---")
+st.markdown("### 📈 Grafik Perbandingan: Harga Asli vs Prediksi")
+st.write("Jika model 100% akurat, titik-titik akan mengikuti garis diagonal merah.")
+
+# 4. Membuat Grafik Menggunakan Matplotlib
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+
+# Plot XGBoost
+ax1.scatter(y_test, xgb_test_pred, alpha=0.5, color='blue')
+ax1.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+ax1.set_title(f"XGBoost (RMSE: ${rmse_xgb:,.0f})")
+ax1.set_xlabel("Harga Asli (Actual Price)")
+ax1.set_ylabel("Harga Prediksi (Predicted Price)")
+
+# Plot Linear Regression
+ax2.scatter(y_test, lr_test_pred, alpha=0.5, color='green')
+ax2.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+ax2.set_title(f"Linear Regression (RMSE: ${rmse_lr:,.0f})")
+ax2.set_xlabel("Harga Asli (Actual Price)")
+ax2.set_ylabel("Harga Prediksi (Predicted Price)")
+
+plt.tight_layout()
+
+# 5. Tampilkan Grafik di Streamlit
+st.pyplot(fig)
