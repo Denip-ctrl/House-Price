@@ -3,15 +3,8 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-import numpy as np
 
-# Load data
-# df = pd.read_csv(r"C:\Users\Dodi Priambodo\Documents\Data Science\ames iowa housing.csv")
-# X = df[['GrLivArea', 'LotArea', 'BedroomAbvGr', 'GarageCars']]
-# y = df['SalePrice']
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Cache the data load
+# 1. Fungsi Load Data (Di-cache agar efisien)
 @st.cache_data
 def load_data():
     df = pd.read_csv("ames iowa housing.csv")
@@ -19,18 +12,10 @@ def load_data():
     y = df['SalePrice']
     return train_test_split(X, y, test_size=0.2, random_state=42)
 
-
-# Train models
-# xgb_model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, max_depth=3)
-# xgb_model.fit(X_train, y_train)
-
-# lr_model = LinearRegression()
-# lr_model.fit(X_train, y_train)
-
-# Cache each model's training
+# 2. Fungsi Training Model (Di-cache agar tidak melatih ulang setiap user geser slider)
 @st.cache_resource
 def train_xgb(X_train, y_train):
-    model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, max_depth=3)
+    model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42)
     model.fit(X_train, y_train)
     return model
 
@@ -40,46 +25,36 @@ def train_lr(X_train, y_train):
     model.fit(X_train, y_train)
     return model
 
-# Streamlit UI
-st.title("🏡 House Price Predictor – House Dataset")
-
-st.sidebar.header("🏗️ Property Details")
-gr_liv_area = st.sidebar.slider("Living Area (sq ft)", 500, 5000, 1500)
-lot_area = st.sidebar.slider("Lot Size (sq ft)", 2000, 20000, 8000)
-bedrooms = st.sidebar.slider("Number of Bedrooms", 1, 10, 3)
-garage = st.sidebar.slider("Garage Capacity (Cars)", 0, 4, 2)
-
-
-# Main logic
+# 3. Eksekusi Load Data & Training
 X_train, X_test, y_train, y_test = load_data()
 feature_names = X_train.columns
 
 xgb_model = train_xgb(X_train, y_train)
 lr_model = train_lr(X_train, y_train)
 
+# 4. Streamlit UI
+st.title("🏡 House Price Predictor – Ames Iowa Dataset")
 
-# Create input DataFrame
-input_data = pd.DataFrame([[gr_liv_area, lot_area, bedrooms, garage]],
-                          columns=feature_names
+st.sidebar.header("Input Fitur Rumah")
+gr_liv_area = st.sidebar.slider("Above Ground Living Area (sqft)", 500, 5000, 1500)
+lot_area = st.sidebar.slider("Lot Size (sqft)", 1000, 50000, 10000)
+bedrooms = st.sidebar.slider("Number of Bedrooms", 1, 10, 3)
+garage = st.sidebar.slider("Garage Capacity (Cars)", 0, 4, 2)
+
+# 5. Membuat DataFrame Input dari User
+input_data = pd.DataFrame(
+    [[gr_liv_area, lot_area, bedrooms, garage]], 
+    columns=feature_names
 )
 
+# 6. Prediksi dan Menampilkan Hasil
+st.subheader("Hasil Prediksi Harga Rumah")
 
-# Predict
 xgb_pred = xgb_model.predict(input_data)[0]
 lr_pred = lr_model.predict(input_data)[0]
 
-# Show Results
-st.subheader("💡 Predicted Prices")
-st.success(f"📈 XGBoost Model: ${xgb_pred:,.0f}")
-st.info(f"📉 Linear Regression: ${lr_pred:,.0f}")
-
-# RMSE Comparison
-from sklearn.metrics import mean_squared_error
-
-xgb_rmse = np.sqrt(mean_squared_error(y_test, xgb_model.predict(X_test)))
-lr_rmse = np.sqrt(mean_squared_error(y_test, lr_model.predict(X_test)))
-
-st.write("### 📊 Model Accuracy")
-st.metric(label="XGBoost RMSE", value=f"${xgb_rmse:,.0f}")
-st.metric(label="Linear Regression RMSE", value=f"${lr_rmse:,.0f}")
-
+col1, col2 = st.columns(2)
+with col1:
+    st.metric(label="Prediksi XGBoost", value=f"${xgb_pred:,.2f}")
+with col2:
+    st.metric(label="Prediksi Linear Regression", value=f"${lr_pred:,.2f}")
